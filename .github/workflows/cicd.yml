@@ -1,0 +1,151 @@
+name: cicd-workflow
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  # Espera que estes segredos sejam definidos no repositório: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, S3_BUCKET, LAMBDA_FUNCTION_NAME
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  S3_BUCKET: ${{ secrets.S3_BUCKET }}
+  LAMBDA_FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME }}
+
+jobs:
+  plan:
+    name: Terraform plan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Hashicorp - Terraform setup
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Cache Terraform providers
+        uses: terraform-cache/terraform-cache@v1
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: ./infra
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: ./infra
+        run: |
+          terraform fmt -recursive
+          terraform validate
+        continue-on-error: false
+
+      - name: Terraform Plan
+        working-directory: ./infra
+        run: terraform plan
+
+  deploy:
+    name: Terraform apply
+    needs: plan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init && Apply
+        working-directory: ./infra
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+  frontend-deploy:
+    name: Build and deploy frontend to S3
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Angular (production)
+        working-directory: frontend
+        run: npm run build -- --configuration production
+
+      - name: Sync build to S3
+        env:
+          S3_BUCKET: ${{ env.S3_BUCKET }}
+        run: |
+          # Se o build ssr criar pasta browser (Angular Universal), use ela; senão use a pasta dist principal
+          if [ -d "frontend/dist/unasp-workshop-app/browser" ]; then
+            aws s3 sync frontend/dist/unasp-workshop-app/browser s3://$S3_BUCKET --delete --acl public-read
+          else
+            aws s3 sync frontend/dist/unasp-workshop-app s3://$S3_BUCKET --delete --acl public-read
+          fi
+
+  lambda-deploy:
+    name: Package and deploy Lambda
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Package lambda (zip)
+        working-directory: lambda
+        run: |
+          # Remove any previous artifact
+          rm -f ../lambda_function.zip
+          # Zip current lambda folder contents (preserve structure)
+          zip -r ../lambda_function.zip . -x "*.pyc" "__pycache__/*"
+
+      - name: Deploy lambda (update-function-code)
+        env:
+          LAMBDA_NAME: ${{ env.LAMBDA_FUNCTION_NAME }}
+        run: |
+          if [ -z "$LAMBDA_NAME" ]; then
+            echo "LAMBDA_FUNCTION_NAME is not set. Set repository secret LAMBDA_FUNCTION_NAME."; exit 1
+          fi
+          aws lambda update-function-code --function-name "$LAMBDA_NAME" --zip-file fileb://lambda_function.zip --region ${{ secrets.AWS_REGION }}
