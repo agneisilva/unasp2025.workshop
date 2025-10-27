@@ -33,8 +33,15 @@ jobs:
       - name: Hashicorp - Terraform setup
         uses: hashicorp/setup-terraform@v3
 
-      - name: Cache Terraform providers
-        uses: terraform-cache/terraform-cache@v1
+      - name: Cache Terraform
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            .terraform
+          key: ${{ runner.os }}-terraform-${{ hashFiles('**/*.tf') }}
+          restore-keys: |
+            ${{ runner.os }}-terraform-
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
