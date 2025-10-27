@@ -14,7 +14,7 @@ permissions:
 env:
   # Espera que estes segredos sejam definidos no repositório: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, S3_BUCKET, LAMBDA_FUNCTION_NAME
   AWS_REGION: us-east-1
-  S3_BUCKET: ${{ secrets.S3_BUCKET }}
+  #S3_BUCKET: ${{ secrets.S3_BUCKET }}
   LAMBDA_FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME }}
 
 jobs:
