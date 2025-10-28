@@ -70,6 +70,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       bucket_name: ${{ steps.tf_output.outputs.bucket_name }}
+      api_url: ${{ steps.tf_output.outputs.api_url }}
+      table_name: ${{ steps.tf_output.outputs.table_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -131,12 +133,16 @@ jobs:
         working-directory: ./infra
         run: terraform apply -auto-approve
       
-      - name: Capturar bucket name do output
+      - name: Capturar outputs do Terraform (bucket, api_url, table_name)
         id: tf_output
         working-directory: ./infra
         run: |
           BUCKET_NAME=$(terraform output -raw bucket_name)
+          API_URL=$(terraform output -raw api_gateway_url)
+          TABLE_NAME=$(terraform output -raw dynamodb_table_name)
           echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          echo "table_name=$TABLE_NAME" >> $GITHUB_OUTPUT
 
   frontend-deploy:
     name: Build and deploy frontend to S3
@@ -161,6 +167,18 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
+
+      - name: Gerar environment.prod.ts com outputs do Terraform
+        working-directory: frontend
+        run: |
+          mkdir -p src/environments
+          cat > src/environments/environment.prod.ts << 'EOF'
+          export const environment = {
+            production: true,
+            apiUrl: '${{ needs.deploy.outputs.api_url }}',
+            tableName: '${{ needs.deploy.outputs.table_name }}',
+          };
+          EOF
 
       - name: Build Angular (production)
         working-directory: frontend

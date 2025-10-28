@@ -10,6 +10,12 @@ output "api_gateway_invoke_url" {
 }
 
 
+output "dynamodb_table_name" {
+  description = "DynamoDB table name used by the app"
+  value       = aws_dynamodb_table.workshop_table.name
+}
+
+
 output "bucket_name" {
   value       = aws_s3_bucket.example.bucket
   description = "Name of the S3 bucket created for the Angular app"

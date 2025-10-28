@@ -8,6 +8,7 @@ import {
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { environment } from '../environments/environment';
 import { catchError, finalize, of, tap } from 'rxjs';
 
 /**
@@ -159,9 +160,9 @@ export class AppComponent implements OnInit {
   private http = inject(HttpClient);
 
   // --- Configuração ---
-  // !! IMPORTANTE !! Cole a URL da sua API Gateway aqui
-  private readonly apiUrl = "https://q1ll9nh41k.execute-api.us-east-1.amazonaws.com/default/lambda_read_write_dynamodb";
-  private readonly tableName = "unaspworkshop";
+  // URL e nome da tabela vindos do environment (preenchidos no build)
+  private readonly apiUrl = environment.apiUrl;
+  private readonly tableName = environment.tableName;
 
   // --- Estado da Aplicação (Signals) ---
   
