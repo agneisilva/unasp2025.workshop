@@ -21,3 +21,9 @@ variable "api_gateway_name" {
   type        = string
   default     = "unasp-workshop-api"
 }
+
+variable "lambda_execution_role_arn" {
+  description = "ARN da role IAM para execução da função Lambda"
+  type        = string
+  default     = "arn:aws:iam::528757791784:role/unasp_workshop"
+}

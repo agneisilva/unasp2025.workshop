@@ -24,7 +24,7 @@ resource "aws_lambda_function" "workshop_lambda" {
   # Garante atualização do código quando o ZIP mudar
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   function_name = var.lambda_function_name
-  role          = "arn:aws:iam::528757791784:role/unasp_workshop"
+  role          = var.lambda_execution_role_arn
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.9"
 
