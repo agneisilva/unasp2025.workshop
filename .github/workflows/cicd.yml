@@ -51,7 +51,13 @@ jobs:
 
       - name: Terraform Init
         working-directory: ./infra
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=unasp-workshop/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}" \
+            -input=false
 
       - name: Terraform Validate
         working-directory: ./infra
@@ -68,6 +74,8 @@ jobs:
     name: Terraform apply
     needs: plan
     runs-on: ubuntu-latest
+    outputs:
+      bucket_name: ${{ steps.tf_output.outputs.bucket_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -84,18 +92,45 @@ jobs:
 
       - name: Terraform Init
         working-directory: ./infra
-        run: terraform init -input=false -upgrade
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=unasp-workshop/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}" \
+            -input=false -upgrade
 
-      - name: Importar tabela DynamoDB se já existir
+      - name: Importar recursos existentes (evitar duplicação)
         working-directory: ./infra
         run: |
+          # Importa DynamoDB se existir
           if aws dynamodb describe-table --table-name unasp-workshop-table >/dev/null 2>&1; then
-            terraform import aws_dynamodb_table.workshop_table unasp-workshop-table || true
+            terraform import -input=false aws_dynamodb_table.workshop_table unasp-workshop-table || true
+          fi
+          # Importa bucket S3 se existir
+          if aws s3api head-bucket --bucket unasp-workshop-2025-front >/dev/null 2>&1; then
+            terraform import -input=false aws_s3_bucket.example unasp-workshop-2025-front || true
+          fi
+          # Importa Lambda se existir
+          if aws lambda get-function --function-name unasp-workshop-lambda >/dev/null 2>&1; then
+            terraform import -input=false aws_lambda_function.workshop_lambda unasp-workshop-lambda || true
+          fi
+          # Importa API Gateway se existir (busca pelo nome)
+          API_ID=$(aws apigatewayv2 get-apis --query "Items[?Name=='unasp-workshop-api'].ApiId | [0]" --output text 2>/dev/null || echo "")
+          if [ -n "$API_ID" ] && [ "$API_ID" != "None" ]; then
+            terraform import -input=false aws_apigatewayv2_api.workshop_api "$API_ID" || true
           fi
 
       - name: Terraform Apply
         working-directory: ./infra
         run: terraform apply -auto-approve
+      
+      - name: Capturar bucket name do output
+        id: tf_output
+        working-directory: ./infra
+        run: |
+          BUCKET_NAME=$(terraform output -raw bucket_name)
+          echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
 
   frontend-deploy:
     name: Build and deploy frontend to S3
@@ -127,7 +162,7 @@ jobs:
 
       - name: Sync build to S3
         env:
-          S3_BUCKET: ${{ env.S3_BUCKET }}
+          S3_BUCKET: ${{ needs.deploy.outputs.bucket_name }}
         run: |
           # Se o build ssr criar pasta browser (Angular Universal), use ela; senão use a pasta dist principal
           if [ -d "frontend/dist/unasp-workshop-app/browser" ]; then

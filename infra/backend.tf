@@ -1,7 +1,7 @@
 
 # DynamoDB Table
 resource "aws_dynamodb_table" "workshop_table" {
-  name           = "unasp-workshop-table"
+  name           = var.dynamodb_table_name
   billing_mode   = "PAY_PER_REQUEST"
   hash_key       = "id"
 
@@ -23,7 +23,7 @@ resource "aws_lambda_function" "workshop_lambda" {
   filename      = data.archive_file.lambda_zip.output_path
   # Garante atualização do código quando o ZIP mudar
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
-  function_name = "unasp-workshop-lambda"
+  function_name = var.lambda_function_name
   role          = "arn:aws:iam::528757791784:role/unasp_workshop"
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.9"
@@ -48,7 +48,7 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
 
 # API Gateway
 resource "aws_apigatewayv2_api" "workshop_api" {
-  name          = "unasp-workshop-api"
+  name          = var.api_gateway_name
   protocol_type = "HTTP"
 
   cors_configuration {

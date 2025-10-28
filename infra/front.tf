@@ -1,13 +1,14 @@
 
 
 resource "aws_s3_bucket" "example" {
-  bucket = "workshop-unasp-${random_id.bucket_suffix.hex}" # Make bucket name unique
+  # Nome do bucket vem da variável
+  bucket = var.frontend_bucket_name
 
-  # Allow Terraform to destroy the bucket even if it contains objects (useful for cleanup)
+  # Permite Terraform destruir o bucket mesmo com objetos (útil para limpeza)
   force_destroy = true
 
   tags = {
-    Name        = "My bucket"
+    Name        = "UNASP Workshop Frontend"
     Environment = "Dev"
   }
 }
@@ -23,10 +24,7 @@ resource "aws_s3_bucket_website_configuration" "example" {
   }
 }
 
-# Add a random suffix to ensure bucket name uniqueness
-resource "random_id" "bucket_suffix" {
-  byte_length = 4
-}
+# Removido random_id - bucket agora usa nome fixo
 
 /* Allow public policies / public access on this bucket (so site can be served publicly).
    NOTE: account-level public access block may still prevent public access. */
