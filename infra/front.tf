@@ -62,9 +62,9 @@ resource "aws_s3_bucket_policy" "public_read" {
 
 /* Upload local index.html (from project) to the bucket so website has content.
    The source path is relative to this infra/ directory. Adjust if your index.html is elsewhere. */
-resource "aws_s3_bucket_object" "index" {
-  bucket       = aws_s3_bucket.example.bucket
-  key          = "index.html"
-  source       = "${path.module}/../src/index.html" # adjust path if your index.html lives elsewhere
-  content_type = "text/html"
-}
+# resource "aws_s3_bucket_object" "index" {
+#   bucket       = aws_s3_bucket.example.bucket
+#   key          = "index.html"
+#   source       = "${path.module}/../src/index.html" # adjust path if your index.html lives elsewhere
+#   content_type = "text/html"
+# }
