@@ -7,15 +7,14 @@ on:
   pull_request:
     branches: ["main"]
 
+# permission can be added at job level or workflow level
 permissions:
-  id-token: write
-  contents: read
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
 
-#env:
-  # Espera que estes segredos sejam definidos no repositório: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, S3_BUCKET, LAMBDA_FUNCTION_NAME
-  #AWS_REGION: us-east-1
-  #S3_BUCKET: ${{ secrets.S3_BUCKET }}
-  #LAMBDA_FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME }}
+env:
+  AWS_REGION: us-east-1
+  ROLE_TO_ASSUME: arn:aws:iam::528757791784:role/role_github_openID
 
 jobs:
   plan:
@@ -44,11 +43,11 @@ jobs:
             ${{ runner.os }}-terraform-
 
       - name: Configure AWS Credentials for github actions
-        uses: aws-actions/configure-aws-credentials@v4.0.2
+        uses: aws-actions/configure-aws-credentials@v5.1.0
         with:
           audience: sts.amazonaws.com
-          aws-region: ${{secrets.AWS_REGION}}
-          role-to-assume: ${{secrets.ROLE_TO_ASSUME}} #change to reflect IAM role’s ARN
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }} 
 
       - name: Terraform Init
         working-directory: ./infra
@@ -74,11 +73,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure AWS Credentials for github actions
-        uses: aws-actions/configure-aws-credentials@v4.0.2
+        uses: aws-actions/configure-aws-credentials@v5.1.0
         with:
           audience: sts.amazonaws.com
-          aws-region: ${{secrets.AWS_REGION}}
-          role-to-assume: ${{secrets.ROLE_TO_ASSUME}} #change to reflect IAM role’s ARN
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }} 
 
       - name: Terraform Init && Apply
         working-directory: ./infra
@@ -100,11 +99,11 @@ jobs:
           node-version: 20
 
       - name: Configure AWS Credentials for github actions
-        uses: aws-actions/configure-aws-credentials@v4.0.2
+        uses: aws-actions/configure-aws-credentials@v5.1.0
         with:
           audience: sts.amazonaws.com
-          aws-region: ${{secrets.AWS_REGION}}
-          role-to-assume: ${{secrets.ROLE_TO_ASSUME}} #change to reflect IAM role’s ARN
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }} 
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -134,11 +133,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure AWS Credentials for github actions
-        uses: aws-actions/configure-aws-credentials@v4.0.2
+        uses: aws-actions/configure-aws-credentials@v5.1.0
         with:
           audience: sts.amazonaws.com
-          aws-region: ${{secrets.AWS_REGION}}
-          role-to-assume: ${{secrets.ROLE_TO_ASSUME}} #change to reflect IAM role’s ARN
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }} 
 
       - name: Package lambda (zip)
         working-directory: lambda
