@@ -82,6 +82,13 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
+      - name: Importar tabela DynamoDB se já existir
+        working-directory: ./infra
+        run: |
+          if aws dynamodb describe-table --table-name unasp-workshop-table; then
+            terraform import aws_dynamodb_table.workshop_table unasp-workshop-table || true
+          fi
+
       - name: Terraform Init && Apply
         working-directory: ./infra
         run: |
