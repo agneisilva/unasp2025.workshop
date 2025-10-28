@@ -80,20 +80,22 @@ jobs:
           role-to-assume: ${{ env.ROLE_TO_ASSUME }} 
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: ./infra
+        run: terraform init -input=false -upgrade
 
       - name: Importar tabela DynamoDB se já existir
         working-directory: ./infra
         run: |
-          if aws dynamodb describe-table --table-name unasp-workshop-table; then
+          if aws dynamodb describe-table --table-name unasp-workshop-table >/dev/null 2>&1; then
             terraform import aws_dynamodb_table.workshop_table unasp-workshop-table || true
           fi
 
-      - name: Terraform Init && Apply
+      - name: Terraform Apply
         working-directory: ./infra
-        run: |
-          terraform init
-          terraform apply -auto-approve
+        run: terraform apply -auto-approve
 
   frontend-deploy:
     name: Build and deploy frontend to S3
