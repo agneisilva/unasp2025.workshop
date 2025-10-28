@@ -184,9 +184,5 @@ jobs:
         env:
           S3_BUCKET: ${{ needs.deploy.outputs.bucket_name }}
         run: |
-          # Se o build ssr criar pasta browser (Angular Universal), use ela; senão use a pasta dist principal
-          if [ -d "frontend/dist/unasp-workshop-app/browser" ]; then
-            aws s3 sync frontend/dist/unasp-workshop-app/browser s3://$S3_BUCKET --delete
-          else
-            aws s3 sync frontend/dist/unasp-workshop-app s3://$S3_BUCKET --delete
-          fi
+          # Build sem SSR gera os arquivos direto em dist/unasp-workshop-app
+          aws s3 sync frontend/dist/unasp-workshop-app s3://$S3_BUCKET --delete
