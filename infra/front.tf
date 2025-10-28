@@ -1,23 +1,4 @@
-terraform {
-  required_providers {
-    aws = {
-      source = "hashicorp/aws"
-      version = "5.85.0"
-    }
-  }
-}
 
-provider "aws" {
-  # Configuration options
-  region = "us-east-1"
-}
-
-# Variable definitions
-variable "aws_region" {
-  description = "AWS region for resources"
-  type        = string
-  default     = "us-east-1"
-}
 
 resource "aws_s3_bucket" "example" {
   bucket = "workshop-unasp-${random_id.bucket_suffix.hex}" # Make bucket name unique
@@ -86,14 +67,4 @@ resource "aws_s3_bucket_object" "index" {
   key          = "index.html"
   source       = "${path.module}/../src/index.html" # adjust path if your index.html lives elsewhere
   content_type = "text/html"
-}
-
-output "bucket_name" {
-  value       = aws_s3_bucket.example.bucket
-  description = "Name of the S3 bucket created for the Angular app"
-}
-
-output "website_endpoint" {
-  value       = aws_s3_bucket.example.website_endpoint
-  description = "S3 website endpoint (useful to access the hosted index.html)"
 }

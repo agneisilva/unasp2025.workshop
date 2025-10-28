@@ -1,15 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 4.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = "us-east-1"
-}
 
 # DynamoDB Table
 resource "aws_dynamodb_table" "workshop_table" {
@@ -102,13 +90,3 @@ resource "aws_lambda_permission" "api_gw" {
   source_arn    = "${aws_apigatewayv2_api.workshop_api.execution_arn}/*/*"
 }
 
-# Output the API Gateway URL
-output "api_gateway_url" {
-  description = "API Gateway endpoint URL"
-  value       = "${aws_apigatewayv2_api.workshop_api.api_endpoint}/items"
-}
-
-output "api_gateway_invoke_url" {
-  description = "API Gateway stage invoke URL"
-  value       = aws_apigatewayv2_stage.workshop_stage.invoke_url
-}
