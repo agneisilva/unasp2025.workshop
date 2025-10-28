@@ -12,6 +12,16 @@ resource "aws_s3_bucket" "example" {
     Environment = "Dev"
   }
 }
+
+# Configuração de Object Ownership para permitir bucket policy pública
+resource "aws_s3_bucket_ownership_controls" "example" {
+  bucket = aws_s3_bucket.example.id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 resource "aws_s3_bucket_website_configuration" "example" {
   bucket = aws_s3_bucket.example.id
 
