@@ -11,9 +11,16 @@ resource "aws_dynamodb_table" "workshop_table" {
   }
 }
 
+# Empacota a Lambda automaticamente em tempo de apply
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../lambda"
+  output_path = "${path.module}/../lambda_function.zip"
+}
+
 # Lambda Function
 resource "aws_lambda_function" "workshop_lambda" {
-  filename      = "../lambda_function.zip"
+  filename      = data.archive_file.lambda_zip.output_path
   function_name = "unasp-workshop-lambda"
   role          = "arn:aws:iam::528757791784:role/unasp_workshop"
   handler       = "lambda_function.lambda_handler"
