@@ -21,6 +21,8 @@ data "archive_file" "lambda_zip" {
 # Lambda Function
 resource "aws_lambda_function" "workshop_lambda" {
   filename      = data.archive_file.lambda_zip.output_path
+  # Garante atualização do código quando o ZIP mudar
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   function_name = "unasp-workshop-lambda"
   role          = "arn:aws:iam::528757791784:role/unasp_workshop"
   handler       = "lambda_function.lambda_handler"

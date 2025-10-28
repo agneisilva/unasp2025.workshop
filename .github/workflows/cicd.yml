@@ -135,35 +135,3 @@ jobs:
           else
             aws s3 sync frontend/dist/unasp-workshop-app s3://$S3_BUCKET --delete --acl public-read
           fi
-
-  lambda-deploy:
-    name: Package and deploy Lambda
-    needs: deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials for github actions
-        uses: aws-actions/configure-aws-credentials@v5.1.0
-        with:
-          audience: sts.amazonaws.com
-          aws-region: ${{ env.AWS_REGION }}
-          role-to-assume: ${{ env.ROLE_TO_ASSUME }} 
-
-      - name: Package lambda (zip)
-        working-directory: lambda
-        run: |
-          # Remove any previous artifact
-          rm -f ../lambda_function.zip
-          # Zip current lambda folder contents (preserve structure)
-          zip -r ../lambda_function.zip . -x "*.pyc" "__pycache__/*"
-
-      - name: Deploy lambda (update-function-code)
-        env:
-          LAMBDA_NAME: ${{ env.LAMBDA_FUNCTION_NAME }}
-        run: |
-          if [ -z "$LAMBDA_NAME" ]; then
-            echo "LAMBDA_FUNCTION_NAME is not set. Set repository secret LAMBDA_FUNCTION_NAME."; exit 1
-          fi
-          aws lambda update-function-code --function-name "$LAMBDA_NAME" --zip-file fileb://lambda_function.zip --region ${{ secrets.AWS_REGION }}
