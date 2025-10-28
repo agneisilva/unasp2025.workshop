@@ -51,13 +51,7 @@ jobs:
 
       - name: Terraform Init
         working-directory: ./infra
-        run: |
-          terraform init \
-            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
-            -backend-config="key=unasp-workshop/terraform.tfstate" \
-            -backend-config="region=${{ env.AWS_REGION }}" \
-            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}" \
-            -input=false
+        run: terraform init -input=false
 
       - name: Terraform Validate
         working-directory: ./infra
@@ -90,15 +84,17 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Cache Terraform state
+        uses: actions/cache@v4
+        with:
+          path: infra/terraform.tfstate
+          key: terraform-state-${{ github.run_id }}
+          restore-keys: |
+            terraform-state-
+
       - name: Terraform Init
         working-directory: ./infra
-        run: |
-          terraform init \
-            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
-            -backend-config="key=unasp-workshop/terraform.tfstate" \
-            -backend-config="region=${{ env.AWS_REGION }}" \
-            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}" \
-            -input=false -upgrade
+        run: terraform init -input=false -upgrade
 
       - name: Importar recursos existentes (evitar duplicação)
         working-directory: ./infra

@@ -10,11 +10,8 @@ terraform {
     }
   }
   
-  # Backend S3 para persistir estado entre execuções do CI/CD
-  # Configuração passada via -backend-config no workflow
-  backend "s3" {
-    # bucket, key, region, dynamodb_table serão fornecidos no terraform init
-  }
+  # Backend local - estado salvo como artifact do GitHub Actions
+  # Para produção, configure backend S3 conforme BACKEND_SETUP.md
 }
 
 provider "aws" {
