@@ -1,9 +1,11 @@
 import boto3
 import json
-import base64 # Importado para decodificar base64
+import base64  # Importado para decodificar base64
+import os
 
 print('Loading function')
 dynamo = boto3.client('dynamodb')
+TABLE_NAME = os.getenv('DYNAMODB_TABLE')
 
 
 def respond(err, res=None):
@@ -41,9 +43,9 @@ def lambda_handler(event, context):
 
     operations = {
         'DELETE': lambda dynamo, x: dynamo.delete_item(**x),
-        'GET': lambda dynamo, x: dynamo.scan(**x),
-        'POST': lambda dynamo, x: dynamo.put_item(**x),
-        'PUT': lambda dynamo, x: dynamo.update_item(**x),
+        'GET':    lambda dynamo, x: dynamo.scan(**x),
+        'POST':   lambda dynamo, x: dynamo.put_item(**x),
+        'PUT':    lambda dynamo, x: dynamo.update_item(**x),
     }
 
     
@@ -61,27 +63,28 @@ def lambda_handler(event, context):
 
     try:
 
-        payload = None
+        # Para GET, não exigimos mais query params; usamos a tabela do env
         if operation == 'GET':
-            # Usar .get() para evitar erro se queryStringParameters for nulo
-            payload = event.get('queryStringParameters')
-            if payload is None:
-                 return respond(ValueError('GET method requires queryStringParameters'))
+            params = { 'TableName': TABLE_NAME }
         else:
             # Lógica para POST, PUT, DELETE
             body_str = event.get('body')
             if not body_str:
                 return respond(ValueError('Request body is missing or empty'))
-            
-            # **CORREÇÃO IMPORTANTE**: Checa se o body veio em base64
+
+            # Checa se o body veio em base64
             if event.get('isBase64Encoded', False):
                 print("Body está em base64, decodificando...")
                 body_str = base64.b64decode(body_str).decode('utf-8')
-            
-            payload = json.loads(body_str)
+
+            # Esperamos o payload no formato dos métodos do DynamoDB (Item, Key, UpdateExpression, etc.)
+            params = json.loads(body_str)
+            # Se o cliente não informou a tabela, usamos a do ambiente
+            if 'TableName' not in params:
+                params['TableName'] = TABLE_NAME
 
         # Executa a operação do DynamoDB
-        result = operations[operation](dynamo, payload)
+        result = operations[operation](dynamo, params)
         
         # Scan e GetItem podem retornar 'Items' ou 'Item' que não são serializáveis
         # Esta é uma boa prática, embora não estritamente necessária para put/delete
@@ -89,7 +92,7 @@ def lambda_handler(event, context):
              # O boto3 pode retornar tipos Decimal que json.dumps não entende
              # Esta é uma forma simples de contornar isso, mas para produção
              # seria melhor usar um JSON encoder customizado.
-             result['Items'] = json.loads(json.dumps(result['Items'], default=str))
+            result['Items'] = json.loads(json.dumps(result['Items'], default=str))
         
         return respond(None, result)
 

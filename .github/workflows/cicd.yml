@@ -71,7 +71,6 @@ jobs:
     outputs:
       bucket_name: ${{ steps.tf_output.outputs.bucket_name }}
       api_url: ${{ steps.tf_output.outputs.api_url }}
-      table_name: ${{ steps.tf_output.outputs.table_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -133,16 +132,14 @@ jobs:
         working-directory: ./infra
         run: terraform apply -auto-approve
       
-      - name: Capturar outputs do Terraform (bucket, api_url, table_name)
+      - name: Capturar outputs do Terraform (bucket e api_url)
         id: tf_output
         working-directory: ./infra
         run: |
           BUCKET_NAME=$(terraform output -raw bucket_name)
           API_URL=$(terraform output -raw api_gateway_url)
-          TABLE_NAME=$(terraform output -raw dynamodb_table_name)
           echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
           echo "api_url=$API_URL" >> $GITHUB_OUTPUT
-          echo "table_name=$TABLE_NAME" >> $GITHUB_OUTPUT
 
   frontend-deploy:
     name: Build and deploy frontend to S3
@@ -176,7 +173,6 @@ jobs:
           export const environment = {
             production: true,
             apiUrl: '${{ needs.deploy.outputs.api_url }}',
-            tableName: '${{ needs.deploy.outputs.table_name }}',
           };
           EOF
 

@@ -160,9 +160,8 @@ export class AppComponent implements OnInit {
   private http = inject(HttpClient);
 
   // --- Configuração ---
-  // URL e nome da tabela vindos do environment (preenchidos no build)
+  // A URL da API vem do environment; a Lambda decide a tabela
   private readonly apiUrl = environment.apiUrl;
-  private readonly tableName = environment.tableName;
 
   // --- Estado da Aplicação (Signals) ---
   
@@ -191,10 +190,8 @@ export class AppComponent implements OnInit {
     this.isLoading.set(true);
     this.error.set(null);
 
-    // O GET (Scan) espera TableName como query string param
-    const params = { TableName: this.tableName };
-
-    this.http.get<any>(this.apiUrl, { params }).pipe(
+  // GET sem parâmetros; a Lambda usa a tabela configurada via env
+  this.http.get<any>(this.apiUrl).pipe(
       tap((response) => {
         // Ordena os itens por ID antes de exibi-los
         const sortedItems = response.Items.sort((a: DynamoDBItem, b: DynamoDBItem) => 
@@ -228,9 +225,8 @@ export class AppComponent implements OnInit {
     // ID único gerado no cliente
     const newId = `item-angular-${Date.now()}`;
 
-    // Payload para o 'put_item' do DynamoDB
+    // Payload para o 'put_item' do DynamoDB (sem TableName)
     const payload = {
-      TableName: this.tableName,
       Item: {
         id: { S: newId },
         dados: { S: dados }
@@ -262,9 +258,8 @@ export class AppComponent implements OnInit {
     this.isLoading.set(true);
     this.error.set(null);
 
-    // Payload para o 'delete_item'
+    // Payload para o 'delete_item' (sem TableName)
     const payload = {
-      TableName: this.tableName,
       Key: {
         id: { S: id }
       }
@@ -315,9 +310,8 @@ export class AppComponent implements OnInit {
     this.isLoading.set(true);
     this.error.set(null);
 
-    // Payload para o 'update_item'
+    // Payload para o 'update_item' (sem TableName)
     const payload = {
-      TableName: this.tableName,
       Key: {
         id: { S: id }
       },

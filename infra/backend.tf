@@ -90,6 +90,25 @@ resource "aws_apigatewayv2_route" "workshop_route" {
   target    = "integrations/${aws_apigatewayv2_integration.workshop_integration.id}"
 }
 
+# Rotas adicionais para suportar todos os métodos usados pelo frontend
+resource "aws_apigatewayv2_route" "workshop_route_get" {
+  api_id    = aws_apigatewayv2_api.workshop_api.id
+  route_key = "GET /items"
+  target    = "integrations/${aws_apigatewayv2_integration.workshop_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "workshop_route_put" {
+  api_id    = aws_apigatewayv2_api.workshop_api.id
+  route_key = "PUT /items"
+  target    = "integrations/${aws_apigatewayv2_integration.workshop_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "workshop_route_delete" {
+  api_id    = aws_apigatewayv2_api.workshop_api.id
+  route_key = "DELETE /items"
+  target    = "integrations/${aws_apigatewayv2_integration.workshop_integration.id}"
+}
+
 # Lambda permission to allow API Gateway
 resource "aws_lambda_permission" "api_gw" {
   statement_id  = "AllowExecutionFromAPIGateway"
