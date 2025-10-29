@@ -48,6 +48,7 @@ def lambda_handler(event, context):
         'PUT':    lambda dynamo, x: dynamo.update_item(**x),
     }
 
+    print("Determining operation...")
     
     # Primeiro, tentamos o formato v2.0
     operation = event.get('requestContext', {}).get('http', {}).get('method')
